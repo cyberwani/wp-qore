@@ -71,6 +71,11 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 
 == Changelog ==
 
+= 1.8.2 = 
+* Applied patch to howdy.php.
+* Added Norwegian translation.
+* Updated other language files.
+
 = 1.8.1 = 
 * Fixed missing textdomain and updated Swedish translation.
 
@@ -304,6 +309,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 * Initial Release
 
 == Upgrade Notice ==
+
+= 1.8.2 =
+* Upgrade for the latest version.
 
 = 1.8.1 =
 * Upgrade for the latest version.
