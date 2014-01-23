@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: WP Qore v1.7.9\n"
+"Project-Id-Version: WP Qore v1.8.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2014-01-18 06:23:12+0000\n"
+"PO-Revision-Date: 2014-01-23 06:35:57+0000\n"
 "Last-Translator: admin <enqinet@gmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -369,7 +369,6 @@ msgstr "Búsqueda manual"
 
 #: modules/dropbox_mod/Views/wpq2dbx-options.php:52
 #: sec-advisor.php:950
-#@ default
 #@ wp-qore
 msgid "Settings saved."
 msgstr "Configuración guardada."
@@ -1130,9 +1129,9 @@ msgstr "Un error fatal ha ocurrido:"
 
 #: modules/dropbox_mod/Classes/BackupController.php:251
 #, php-format
-#@ default
+#@ wp-qore
 msgid "WordPress does not have write access to '%s'. Please grant it write privileges before using this plugin."
-msgstr ""
+msgstr "WordPress no tiene acceso de escritura a '%s'. Por favor, escribe conceder privilegios antes de usar este plugin."
 
 #: modules/dropbox_mod/Classes/BackupController.php:264
 #, php-format
@@ -1196,9 +1195,9 @@ msgid "The backup is having trouble uploading files to Dropbox, it has failed %s
 msgstr "La copia de seguridad está teniendo problemas para subir archivos a Dropbox, ha fracasado veces %s y se aborta la copia de seguridad."
 
 #: modules/dropbox_mod/Classes/Extension/DefaultOutput.php:42
-#@ default
+#@ wp-qore
 msgid "Dropbox API not set"
-msgstr ""
+msgstr "API de Dropbox no establecido"
 
 #: modules/dropbox_mod/Classes/Extension/DefaultOutput.php:53
 #, php-format
@@ -1273,7 +1272,6 @@ msgstr "Copia de seguridad en marcha."
 #: modules/dropbox_mod/Views/wpq2dbx-monitor.php:84
 #: modules/dropbox_mod/Views/wpq2dbx-options.php:382
 #@ wp-qore
-#@ default
 msgid "Loading..."
 msgstr "Loading..."
 
@@ -1544,9 +1542,9 @@ msgstr "Backup started on %s."
 
 #: modules/dropbox_mod/wpq-2-dbx.php:139
 #, php-format
-#@ default
+#@ wp-qore
 msgid "Your time limit is %s and your memory limit is %s"
-msgstr ""
+msgstr "Su plazo es de %s y su límite de memoria es %s"
 
 #: modules/dropbox_mod/wpq-2-dbx.php:140
 #@ wp-qore
@@ -1613,12 +1611,6 @@ msgstr "Adminbar opacidad"
 msgid "Adds opacity to admin bar on the frontend"
 msgstr "Añade opacidad al administrador de bar en el frontend"
 
-#. translators: plugin header field 'Version'
-#: index.php:0
-#@ wp-qore
-msgid "1.7.9"
-msgstr "1.7.9"
-
 #: settings.php:622
 #@ wp-qore
 msgid "Change Howdy Text"
@@ -1633,4 +1625,10 @@ msgstr "Cambia ¡Hola a lo que usted desea."
 #@ wp-qore
 msgid "After you update this option, simply go to your dashboard or refresh the page to see the changes take effect."
 msgstr "Después de actualizar esta opción, simplemente vaya a su panel de control o actualizar la página para ver los cambios surtan efecto."
+
+#. translators: plugin header field 'Version'
+#: index.php:0
+#@ wp-qore
+msgid "1.8.1"
+msgstr "1.8.1"
 

@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: WP Qore v1.8.0\n"
+"Project-Id-Version: WP Qore v1.8.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2014-01-19 11:33:01+0000\n"
+"PO-Revision-Date: 2014-01-23 06:40:28+0000\n"
 "Last-Translator: keha76 <keha1976@gmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1629,6 +1629,6 @@ msgstr "När du har uppdaterat detta alternativ, helt enkelt gå till instrument
 #. translators: plugin header field 'Version'
 #: index.php:0
 #@ wp-qore
-msgid "1.8.0"
-msgstr "1.8.0"
+msgid "1.8.1"
+msgstr "1.8.1"
 
