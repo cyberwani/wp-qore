@@ -69,6 +69,10 @@ I can't say this plugin compares with the others. It wasn't created to compete w
 
 Yes. I currently have WP Qore on Github. You may find the project here: https://github.com/icryptic/wp-qore
 
+== Screenshots ==
+
+1. WP Qore Dashboard
+
 == Changelog ==
 
 = 1.8.2 = 
