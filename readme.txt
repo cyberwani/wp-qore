@@ -48,6 +48,7 @@ Langauage Support:
 * Español/México (es_MX)
 * French/France (fr_FR)
 * Svenska/Sverige (sv_SE)
+* Norwegian (no_NO)
 
 == Installation ==
 
