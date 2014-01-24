@@ -4,6 +4,7 @@
  * Timeout in wpqore_foldersize()
  * Fixed by Dave Jesch
  * January 23, 2014
+ * Since 1.8.3
  * https://github.com/icryptic/wp-qore/issues/29
  *
  */
