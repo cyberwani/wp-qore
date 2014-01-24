@@ -1,5 +1,13 @@
 <?php //wp-admin dashboard : begin 
 
+/*
+ * Timeout in wpqore_foldersize()
+ * Fixed by Dave Jesch
+ * January 23, 2014
+ * https://github.com/icryptic/wp-qore/issues/29
+ *
+ */
+
 //include server_info functions
 require_once("server_info.php");
 
@@ -93,55 +101,94 @@ function wpqore_updated($d = '') {
     }
 }
 
-// uploads space
-function wp_upload_space() {
-    $upload_dir     = wp_upload_dir(); 
-    $upload_space   = wpqore_foldersize( $upload_dir['basedir'] );
-    $content_space  = wpqore_foldersize( WP_CONTENT_DIR );
-    $wp_space       = wpqore_foldersize( ABSPATH );
+// calculate space
+function wp_calc_disk_usage() {
+    $upload_dir     = wp_upload_dir();
+    $upload_space   = wpqore_foldersize( $upload_dir['basedir'], NULL );
+    $content_space  = wpqore_foldersize( WP_CONTENT_DIR, $upload_dir['basedir'] ) + $upload_space;
+    $wp_space       = wpqore_foldersize( ABSPATH, WP_CONTENT_DIR ) + $content_space;
 
-    echo wpqore_format_size( $upload_space ); 
+	return (array(
+		'upload' => wpqore_format_size( $upload_space ),
+		'content' => wpqore_format_size( $content_space ),
+		'wp' => wpqore_format_size( $wp_space )
+	));
 }
 
-// wp-content space
-function wp_content_space() {
-    $upload_dir     = wp_upload_dir(); 
-    $upload_space   = wpqore_foldersize( $upload_dir['basedir'] );
-    $content_space  = wpqore_foldersize( WP_CONTENT_DIR );
-    $wp_space       = wpqore_foldersize( ABSPATH );
+function wp_qore_logdata($sMsg)
+{
+	global $fUpload;
 
-    echo wpqore_format_size( $content_space );  
+	if ($fUpload)
+	{
+		$sFile = dirname(__FILE__) . '/~log.txt';
+		$fh = fopen($sFile, 'a+');
+
+		if (!empty($sPlugin))
+			$sMsg = $sPlugin . ': ' . $sMsg;
+
+		if ($fh !== FALSE)
+		{
+			if ($sMsg === NULL)
+				fwrite($fh, date("\r\nY-m-d H:i:s:\r\n"));
+			else
+				fwrite($fh, date("Y-m-d H:i:s: ") . $sMsg . "\r\n");
+			fclose($fh);
+		}
+	}
 }
 
-// wp total space
-function wp_wp_space() {
-    $upload_dir     = wp_upload_dir(); 
-    $upload_space   = wpqore_foldersize( $upload_dir['basedir'] );
-    $content_space  = wpqore_foldersize( WP_CONTENT_DIR );
-    $wp_space       = wpqore_foldersize( ABSPATH ); 
-
-    echo wpqore_format_size( $wp_space );   
-}
-
-function wpqore_foldersize( $path ) {
+function wpqore_foldersize( $path, $exclude = NULL ) {
     $total_size = 0;
+    $path = untrailingslashit($path);
+
+    $transient = 'wp_qore_foldersize_' . str_replace(ABSPATH, '', $path);
+
+	// return transient value if we've done this recently
+    $size = get_transient($transient);
+    if ($size !== false)
+    	return ($size);
+
+	// set up the timer
+	list($usec, $sec) = explode(' ', microtime());
+	$starttime = $sec;
+
+	$size = wp_qore_calcfoldersize($path, $exclude, $starttime);
+
+	// save transient value for 4 hours
+	set_transient($transient, $size, 60 * 60 * 4);
+	return $size;
+}
+
+function wp_qore_calcfoldersize($path, $exclude, $starttime)
+{
+	// check timer
+	list($usec, $sec) = explode(' ', microtime());
+	if ($sec - $starttime > 9) {
+		return 0;			// spending more than 15 seconds, give up
+	}
+
+	$total_size = 0;
+    $cleanPath = $path . '/';
     $files = scandir( $path );
-    $cleanPath = rtrim( $path, '/' ) . '/';
 
     foreach( $files as $t ) {
         if ( '.' != $t && '..' != $t ) {
             $currentFile = $cleanPath . $t;
+
             if ( is_dir( $currentFile ) ) {
-                $size = wpqore_foldersize( $currentFile );
+				$size = 0;
+				if ( $exclude == NULL || ($exclude != NULL && substr($currentFile, 0, strlen($exclude)) != $exclude))
+	                $size = wp_qore_calcfoldersize( $currentFile, $exclude, $starttime );
                 $total_size += $size;
             } else {
                 $size = filesize( $currentFile );
                 $total_size += $size;
             }
-        }   
+        }
     }
 
-    return $total_size;
+	return $total_size;
 }
 
 function wpqore_format_size($size) {
@@ -155,11 +202,12 @@ function wpqore_format_size($size) {
     return substr( $size, 0, $endIndex ) . ' ' . $units[$i];
 }
 
+$wpqoreUrl = plugins_url('', dirname(__FILE__));
 ?>
 
-<link rel="stylesheet" href="<?php echo plugins_url( '../css/layout.css' , __FILE__ ); ?>" type="text/css" media="screen" />
+<link rel="stylesheet" href="<?php echo $wpqoreUrl; ?>/css/layout.css" type="text/css" media="screen" />
 <!--[if lt IE 9]>
-<link rel="stylesheet" href="<?php echo plugins_url( '../css/ie.css' , __FILE__ ); ?>" type="text/css" media="screen" />
+<link rel="stylesheet" href="<?php echo $wpqoreUrl; ?>/css/ie.css" type="text/css" media="screen" />
 <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
 <![endif]-->
     
@@ -241,16 +289,19 @@ function drawChart() {
     <p class="overview_type"><?php _e( 'users', 'wp-qore' ); ?></p>
 </div>
 </article>
-            
+
+<?php
+	$wp_disk_spaces = @wp_calc_disk_usage();
+?>
 <article class="stats_overview" id="stats_overview_2" style="margin-right:20px;margin-top:10px;margin-bottom:20px;padding-top:5px">
 <div class="overview_today">
-    <p class="overview_count"><?php echo @wp_upload_space(); ?></p>
+    <p class="overview_count"><?php echo $wp_disk_spaces['upload']; ?></p>
     <p class="overview_type"><?php _e( 'uploads', 'wp-qore' ); ?></p>
-    <p class="overview_count"><?php echo @wp_content_space(); ?></p>
+    <p class="overview_count"><?php echo $wp_disk_spaces['content']; ?></p>
     <p class="overview_type"><?php _e( 'wp-content', 'wp-qore' ); ?></p>
 </div>
 <div class="overview_previous">
-    <p class="overview_count"><?php echo @wp_wp_space(); ?></p>
+    <p class="overview_count"><?php echo $wp_disk_spaces['wp']; ?></p>
     <p class="overview_type"><?php _e( 'wp total', 'wp-qore' ); ?></p>
     <p class="overview_count"><?php echo $perc;?>%</p>
     <p class="overview_type"><?php _e( 'free hdd', 'wp-qore' ); ?></p>
@@ -304,140 +355,140 @@ if (get_option("wpqorefunc_dash_controls")=='checked') { }else{ ?>
 <?php if (get_option("wpqorefunc_plug-edit")=='checked') {
 
 if ( current_user_can('read') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo plugins_url( '../images/dashboard/edit.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/edit.png'"/></a></div>
 <?php }
 
 if ( current_user_can('edit_posts') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Posts', 'wp-qore' ); ?></div><a href="post-new.php" title="Add New Post"><img src="<?php echo plugins_url( '../images/dashboard/add.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Posts', 'wp-qore' ); ?></div><a href="post-new.php" title="Add New Post"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add.png"/></a></div>
 <?php }
 
 if ( current_user_can('manage_categories') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Categories', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=category" title="Categories"><img src="<?php echo plugins_url( '../images/dashboard/category.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Tags', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=post_tag" title="Tags"><img src="<?php echo plugins_url( '../images/dashboard/tags.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Categories', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=category" title="Categories"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/category.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Tags', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=post_tag" title="Tags"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/tags.png"/></a></div>
 <?php }
 
 if ( current_user_can('upload_files') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Media Library', 'wp-qore' ); ?></div><a href="upload.php" title="Media Library"><img src="<?php echo plugins_url( '../images/dashboard/media.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Media', 'wp-qore' ); ?></div><a href="media-new.php" title="Add New Media"><img src="<?php echo plugins_url( '../images/dashboard/media_add.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Media Library', 'wp-qore' ); ?></div><a href="upload.php" title="Media Library"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/media.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Media', 'wp-qore' ); ?></div><a href="media-new.php" title="Add New Media"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/media_add.png"/></a></div>
 <?php }
 
 if ( current_user_can('moderate_comments') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo plugins_url( '../images/dashboard/comments.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/comments.png' , __FILE__ ); ?>"/></a></div>
 <?php }
 
 if ( current_user_can('publish_pages') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Page', 'wp-qore' ); ?></div><a href="edit.php?post_type=page" title="Add New Page"><img src="<?php echo plugins_url( '../images/dashboard/add_page.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Page', 'wp-qore' ); ?></div><a href="edit.php?post_type=page" title="Add New Page"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add_page.png"/></a></div>
 <?php }
 
 if ( current_user_can('switch_themes') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Themes', 'wp-qore' ); ?></div><a href="themes.php" title="Themes"><img src="<?php echo plugins_url( '../images/dashboard/themes.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Themes', 'wp-qore' ); ?></div><a href="themes.php" title="Themes"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/themes.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_theme_options') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Widgets', 'wp-qore' ); ?></div><a href="widgets.php" title="Widgets"><img src="<?php echo plugins_url( '../images/dashboard/widgets.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Menus', 'wp-qore' ); ?></div><a href="nav-menus.php" title="Menus"><img src="<?php echo plugins_url( '../images/dashboard/menus.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Widgets', 'wp-qore' ); ?></div><a href="widgets.php" title="Widgets"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/widgets.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Menus', 'wp-qore' ); ?></div><a href="nav-menus.php" title="Menus"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/menus.png"/></a></div>
 <?php }
 
 if ( current_user_can('activate_plugins') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins', 'wp-qore' ); ?></div><a href="plugins.php" title="Plugins"><img src="<?php echo plugins_url( '../images/dashboard/plugins.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins', 'wp-qore' ); ?></div><a href="plugins.php" title="Plugins"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/plugins.png"/></a></div>
 <?php }
 
 if ( current_user_can('install_plugins') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Plugin', 'wp-qore' ); ?></div><a href="plugin-install.php" title="Add New Plugin"><img src="<?php echo plugins_url( '../images/dashboard/add-plugin.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Plugin', 'wp-qore' ); ?></div><a href="plugin-install.php" title="Add New Plugin"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add-plugin.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_users') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Users', 'wp-qore' ); ?></div><a href="users.php" title="Users"><img src="<?php echo plugins_url( '../images/dashboard/users.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add User', 'wp-qore' ); ?></div><a href="user-new.php" title="Add New User"><img src="<?php echo plugins_url( '../images/dashboard/add-user.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Users', 'wp-qore' ); ?></div><a href="users.php" title="Users"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/users.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add User', 'wp-qore' ); ?></div><a href="user-new.php" title="Add New User"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add-user.png"/></a></div>
 <?php }
 
 if ( current_user_can('read') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'My Profile', 'wp-qore' ); ?></div><a href="profile.php" title="My Profile"><img src="<?php echo plugins_url( '../images/dashboard/profile.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'My Profile', 'wp-qore' ); ?></div><a href="profile.php" title="My Profile"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/profile.png"/></a></div>
 <?php }
 
 if ( current_user_can('import') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Import', 'wp-qore' ); ?></div><a href="import.php" title="Import Content"><img src="<?php echo plugins_url( '../images/dashboard/import.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Import', 'wp-qore' ); ?></div><a href="import.php" title="Import Content"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/import.png"/></a></div>
 <?php }
 
 if ( current_user_can('export') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Export', 'wp-qore' ); ?></div><a href="export.php" title="Export Content"><img src="<?php echo plugins_url( '../images/dashboard/export.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Export', 'wp-qore' ); ?></div><a href="export.php" title="Export Content"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/export.png"/></a></div>
 <?php }
 
 if ( current_user_can('manage_options') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Settings', 'wp-qore' ); ?></div><a href="options-general.php" title="General Settings"><img src="<?php echo plugins_url( '../images/dashboard/general.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Settings', 'wp-qore' ); ?></div><a href="options-general.php" title="General Settings"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/general.png"/></a></div>
 
 <?php } }else{ 
 
 if ( current_user_can('read') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo plugins_url( '../images/dashboard/edit.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/edit.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_posts') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Posts', 'wp-qore' ); ?></div><a href="post-new.php" title="Add New Post"><img src="<?php echo plugins_url( '../images/dashboard/add.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Posts', 'wp-qore' ); ?></div><a href="post-new.php" title="Add New Post"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add.png"/></a></div>
 <?php }
 
 if ( current_user_can('manage_categories') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Categories', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=category" title="Categories"><img src="<?php echo plugins_url( '../images/dashboard/category.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Tags', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=post_tag" title="Tags"><img src="<?php echo plugins_url( '../images/dashboard/tags.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Categories', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=category" title="Categories"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/category.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Tags', 'wp-qore' ); ?></div><a href="edit-tags.php?taxonomy=post_tag" title="Tags"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/tags.png"/></a></div>
 <?php }
 
 if ( current_user_can('upload_files') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Media Library', 'wp-qore' ); ?></div><a href="upload.php" title="Media Library"><img src="<?php echo plugins_url( '../images/dashboard/media.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Media', 'wp-qore' ); ?></div><a href="media-new.php" title="Add New Media"><img src="<?php echo plugins_url( '../images/dashboard/media_add.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Media Library', 'wp-qore' ); ?></div><a href="upload.php" title="Media Library"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/media.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Media', 'wp-qore' ); ?></div><a href="media-new.php" title="Add New Media"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/media_add.png"/></a></div>
 <?php }
 
 if ( current_user_can('moderate_comments') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo plugins_url( '../images/dashboard/comments.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/comments.png"/></a></div>
 <?php }
 
 if ( current_user_can('publish_pages') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Page', 'wp-qore' ); ?></div><a href="edit.php?post_type=page" title="Add New Page"><img src="<?php echo plugins_url( '../images/dashboard/add_page.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Page', 'wp-qore' ); ?></div><a href="edit.php?post_type=page" title="Add New Page"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add_page.png"/></a></div>
 <?php }
 
 if ( current_user_can('switch_themes') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Themes', 'wp-qore' ); ?></div><a href="themes.php" title="Themes"><img src="<?php echo plugins_url( '../images/dashboard/themes.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Themes', 'wp-qore' ); ?></div><a href="themes.php" title="Themes"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/themes.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_themes') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Theme Editor', 'wp-qore' ); ?></div><a href="theme-editor.php" title="Theme Editor"><img src="<?php echo plugins_url( '../images/dashboard/theme_editor.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Theme Editor', 'wp-qore' ); ?></div><a href="theme-editor.php" title="Theme Editor"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/theme_editor.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_theme_options') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Widgets', 'wp-qore' ); ?></div><a href="widgets.php" title="Widgets"><img src="<?php echo plugins_url( '../images/dashboard/widgets.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Menus', 'wp-qore' ); ?></div><a href="nav-menus.php" title="Menus"><img src="<?php echo plugins_url( '../images/dashboard/menus.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Widgets', 'wp-qore' ); ?></div><a href="widgets.php" title="Widgets"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/widgets.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Menus', 'wp-qore' ); ?></div><a href="nav-menus.php" title="Menus"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/menus.png"/></a></div>
 <?php }
 
 if ( current_user_can('activate_plugins') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins', 'wp-qore' ); ?></div><a href="plugins.php" title="Plugins"><img src="<?php echo plugins_url( '../images/dashboard/plugins.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins', 'wp-qore' ); ?></div><a href="plugins.php" title="Plugins"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/plugins.png"/></a></div>
 <?php }
 
 if ( current_user_can('install_plugins') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Plugin', 'wp-qore' ); ?></div><a href="plugin-install.php" title="Add New Plugin"><img src="<?php echo plugins_url( '../images/dashboard/add-plugin.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add Plugin', 'wp-qore' ); ?></div><a href="plugin-install.php" title="Add New Plugin"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add-plugin.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_plugins') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins Editor', 'wp-qore' ); ?></div><a href="plugin-editor.php" title="Plugin Editor"><img src="<?php echo plugins_url( '../images/dashboard/edit-plugin.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Plugins Editor', 'wp-qore' ); ?></div><a href="plugin-editor.php" title="Plugin Editor"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/edit-plugin.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_users') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Users', 'wp-qore' ); ?></div><a href="users.php" title="Users"><img src="<?php echo plugins_url( '../images/dashboard/users.png' , __FILE__ ); ?>"/></a></div>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add User', 'wp-qore' ); ?></div><a href="user-new.php" title="Add New User"><img src="<?php echo plugins_url( '../images/dashboard/add-user.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Users', 'wp-qore' ); ?></div><a href="users.php" title="Users"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/users.png"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Add User', 'wp-qore' ); ?></div><a href="user-new.php" title="Add New User"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/add-user.png"/></a></div>
 <?php }
 
 if ( current_user_can('read') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'My Profile', 'wp-qore' ); ?></div><a href="profile.php" title="My Profile"><img src="<?php echo plugins_url( '../images/dashboard/profile.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'My Profile', 'wp-qore' ); ?></div><a href="profile.php" title="My Profile"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/profile.png"/></a></div>
 <?php }
 
 if ( current_user_can('import') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Import', 'wp-qore' ); ?></div><a href="import.php" title="Import Content"><img src="<?php echo plugins_url( '../images/dashboard/import.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Import', 'wp-qore' ); ?></div><a href="import.php" title="Import Content"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/import.png"/></a></div>
 <?php }
 
 if ( current_user_can('export') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Export', 'wp-qore' ); ?></div><a href="export.php" title="Export Content"><img src="<?php echo plugins_url( '../images/dashboard/export.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Export', 'wp-qore' ); ?></div><a href="export.php" title="Export Content"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/export.png"/></a></div>
 <?php }
 
 if ( current_user_can('manage_options') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Settings', 'wp-qore' ); ?></div><a href="options-general.php" title="General Settings"><img src="<?php echo plugins_url( '../images/dashboard/general.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Settings', 'wp-qore' ); ?></div><a href="options-general.php" title="General Settings"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/general.png"/></a></div>
 
 <?php } } ?>
 
