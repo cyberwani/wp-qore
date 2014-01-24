@@ -78,6 +78,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 
 == Changelog ==
 
+= 1.8.4 = 
+* Fixed bug in Posts and Comments icon.
+
 = 1.8.3 = 
 * Fixed Timeout in wpqore_foldersize(). Fix by Dave Jesch.
 
@@ -319,6 +322,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 * Initial Release
 
 == Upgrade Notice ==
+
+= 1.8.4 =
+* Upgrade for the latest version.
 
 = 1.8.3 =
 * Upgrade for the latest version.
