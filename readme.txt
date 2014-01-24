@@ -1,5 +1,5 @@
 === WP Qore ===
-Contributors: phatjay, keha76, planetzuda
+Contributors: phatjay, keha76, planetzuda, davejesch
 Tags: developer, security, performance, antivirus, virus, malware, cache, tools, qore, core, customize login page, hide login page, security advisor, replace dashboard, custom dashboard, disable nag updates, disable core updates, admin bar removal, collapse admin menu, use jquery cdn, shortcode in widget, php in widgets, export widgets, import widgets, remove wp version, minify your html, gzip compression, cleanup wp meta, new theme directory, unique source code, automatic updates, admin bar opacity
 Requires at least: 3.3
 Tested up to: 3.8.1
@@ -16,6 +16,8 @@ WordPress Security, Developer Tools Plugin.
 WP Qore offers many powerful features such as Security Advisor, which is our malware and anti-virus scanner. Protection for your WordPress website. Backed by updates from Google's database of web misfits. Rest assured you're always up-to-date and secured.
 
 WP Qore, first debut in the WordPress.org plugin repository is v1.1.4 and previous versions are maintained on <a target="_blank" href="https://github.com/icryptic/wp-qore/">Github</a>.
+
+Project lead: Jason Jersey
 
 Available Options: (toggle on/off)
 
@@ -75,6 +77,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 1. WP Qore Dashboard
 
 == Changelog ==
+
+= 1.8.3 = 
+* Fixed Timeout in wpqore_foldersize(). Fix by Dave Jesch.
 
 = 1.8.2 = 
 * Applied patch to howdy.php.
@@ -314,6 +319,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 * Initial Release
 
 == Upgrade Notice ==
+
+= 1.8.3 =
+* Upgrade for the latest version.
 
 = 1.8.2 =
 * Upgrade for the latest version.
