@@ -356,7 +356,7 @@ if (get_option("wpqorefunc_dash_controls")=='checked') { }else{ ?>
 <?php if (get_option("wpqorefunc_plug-edit")=='checked') {
 
 if ( current_user_can('read') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/edit.png'"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'All Posts', 'wp-qore' ); ?></div><a href="edit.php" title="View All Posts"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/edit.png"/></a></div>
 <?php }
 
 if ( current_user_can('edit_posts') ) { ?>
@@ -374,7 +374,7 @@ if ( current_user_can('upload_files') ) { ?>
 <?php }
 
 if ( current_user_can('moderate_comments') ) { ?>
-<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/comments.png' , __FILE__ ); ?>"/></a></div>
+<div class="dashboard_icons"><div  class="dash_text"><?php _e( 'Comments', 'wp-qore' ); ?></div><a href="edit-comments.php" title="Comments"><img src="<?php echo $wpqoreUrl; ?>/images/dashboard/comments.png"/></a></div>
 <?php }
 
 if ( current_user_can('publish_pages') ) { ?>
