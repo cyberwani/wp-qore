@@ -39,7 +39,6 @@ Available Options: (toggle on/off)
 * dropbox backup
 * remove wp version
 * minify your html
-* gzip compression
 * cleanup wp meta
 * new theme directory
 * unique source code
