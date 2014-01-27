@@ -1,5 +1,5 @@
 === WP Qore ===
-Contributors: phatjay, keha76, planetzuda, davejesch
+Contributors: phatjay, keha76, davejesch
 Tags: developer, security, performance, antivirus, virus, malware, cache, tools, qore, core, customize login page, hide login page, security advisor, replace dashboard, custom dashboard, disable nag updates, disable core updates, admin bar removal, collapse admin menu, use jquery cdn, shortcode in widget, php in widgets, export widgets, import widgets, remove wp version, minify your html, gzip compression, cleanup wp meta, new theme directory, unique source code, automatic updates, admin bar opacity
 Requires at least: 3.3
 Tested up to: 3.8.1
