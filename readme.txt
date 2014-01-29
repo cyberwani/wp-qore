@@ -77,6 +77,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 
 == Changelog ==
 
+= 1.8.5 = 
+* Fixed adminbar links on frontend.
+
 = 1.8.4 = 
 * Fixed bug in Posts and Comments icon.
 
@@ -321,6 +324,9 @@ Yes. I currently have WP Qore on Github. You may find the project here: https://
 * Initial Release
 
 == Upgrade Notice ==
+
+= 1.8.5 =
+* Upgrade for the latest version.
 
 = 1.8.4 =
 * Upgrade for the latest version.
