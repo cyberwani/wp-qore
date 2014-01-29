@@ -58,22 +58,19 @@ function WPQore_Adminbar_Menu(){
   }
 
  function wpqore_adminbar_links() {
-  $home = home_url('/'); // home is where the slash is. lol. here are the updates. *yawn*
+ 	
+   $home = home_url('/'); // home is where the slash is. lol. here are the updates. *yawn*
    $pathfunc = $home . "wp-admin/admin.php?page=wp-qore/functions.php";
-   //$pathcache = $home . "wp-admin/admin.php?page=Cache_AssistanceOptions";
    $pathsec =   $home . "wp-admin/admin.php?page=sec-advisor";
    $pathbox = $home . "wp-admin/admin.php?page=b2dbx";
    $pathmonitor = $home . "wp-admin/admin.php?page=b2dbx-monitor";
+   
       $this->add_root_menu( __( "WP Qore", 'wp-qore' ), "wpqabl" );
       $this->wpqore_add_submenu( __( "WP Qore Options", 'wp-qore' ), $pathfunc, "wpqabl", "wpqablp" );
-      
-	  //if (get_option("wpqorefunc_cache_assistance")=='checked') {
-          //$this->wpqore_add_submenu( __( "Cache Assistance", 'wp-qore' ), $pathcache, "wpqabl", "wpqabla" );
-          //}
           
       if (get_option("wpqorefunc_dropbox_mod")=='checked') {
-          $this->wpqore_add_submenu( __( "Backup Settings", 'wp-qore' ), "admin.php?page=b2dbx", "wpqabl", "wpqablbus" );
-          $this->wpqore_add_submenu( __( "Backup Monitor", 'wp-qore' ), "admin.php?page=b2dbx-monitor", "wpqabl", "wpqablbum" );
+          $this->wpqore_add_submenu( __( "Backup Settings", 'wp-qore' ), $pathbox, "wpqabl", "wpqablbus" );
+          $this->wpqore_add_submenu( __( "Backup Monitor", 'wp-qore' ), $pathmonitor, "wpqabl", "wpqablbum" );
       }
       if (get_option("wpqorefunc_sec_advisor")=='checked') {
           $this->wpqore_add_submenu( __( "Security Advisor", 'wp-qore' ), $pathsec, "wpqabl", "wpqabli" );
